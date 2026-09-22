@@ -15,12 +15,11 @@
 
 ### 현재 단계의 범위
 
-이 문서는 디자인 판단 기준만 정의한다. 다음 항목은 현재 구현하지 않는다.
+이 문서는 디자인 판단 기준과 현재 앱 Shell·홈 화면 구현의 기준을 정의한다. 현재 구현 범위는 기본 navigation, floating glass Bottom Tab Bar, 홈 화면, Harvest Card, Filter, mock data와 나머지 탭의 placeholder다. 다음 항목은 아직 구현하지 않는다.
 
-- 화면 및 컴포넌트 구현
 - 백엔드, API, Supabase, 상태관리
 - 결제, 예약, 정산 기능
-- package 설치 및 native 설정
+- 인증, 실제 위치, 지도, 채팅 backend, push notification
 
 ---
 
@@ -131,10 +130,13 @@
 
 ### Keywords
 
-- Fresh
-- Local
+- Apple-like
+- Minimal
+- Premium
+- Calm
 - Warm
-- Simple
+- Local
+- Fresh
 - Trustworthy
 - Modern
 - Human
@@ -146,6 +148,8 @@
 - 50~60대가 편하게 사용할 수 있지만 시니어 전용 앱처럼 보이지 않는다.
 - 20~30대가 보아도 충분히 현대적인 한국 consumer app이다.
 - 사진과 사람이 중심이고 장식은 절제되어 있다.
+- 화면은 하나의 warm neutral canvas처럼 이어지고 UI chrome은 콘텐츠보다 조용하다.
+- Apple의 인터페이스를 복제하지 않고 Content First, 명확한 위계, 자연스러운 depth와 material 철학을 참고한다.
 
 ### 피해야 할 인상
 
@@ -193,9 +197,12 @@
 
 | Token | Value | 용도 |
 |---|---:|---|
-| `color.background.primary` | `#FFFFFF` | 기본 화면 배경 |
-| `color.background.secondary` | `#F7F7F5` | 섹션 구분, 보조 배경 |
+| `color.background.primary` | `#FAFAF8` | 기본 화면 배경 |
+| `color.background.secondary` | `#F7F7F5` | 필요한 경우의 보조 배경 |
 | `color.surface` | `#FFFFFF` | 카드, 입력, sheet |
+| `color.surface.glass` | `rgba(255,255,255,0.68)` | 떠 있는 glass interface의 tint |
+| `color.surface.glassHighlight` | `rgba(255,255,255,0.72)` | glass surface의 얇은 highlight |
+| `color.surface.glassBorder` | `rgba(255,255,255,0.58)` | glass surface의 약한 border |
 | `color.text.primary` | `#191919` | 제목, 본문, 핵심 정보 |
 | `color.text.secondary` | `#767676` | 거리, 시간, 보조 설명 |
 | `color.text.muted` | `#999999` | 낮은 우선순위 정보, 비활성 보조 문구 |
@@ -211,7 +218,7 @@
 
 ### 6.2 Semantic Rules
 
-- 기본 화면은 `background.primary`, 큰 섹션 구분이 필요할 때만 `background.secondary`를 사용한다.
+- 기본 화면은 `background.primary`를 사용해 하나의 canvas처럼 연결한다. section마다 다른 배경색을 반복하지 않는다.
 - 제목과 본문은 `text.primary`, 메타 정보는 `text.secondary`를 사용한다.
 - `text.muted`는 핵심 정보나 작은 글자의 유일한 색으로 사용하지 않는다.
 - Brand Green은 브랜드, Primary CTA, 선택 상태, 수확 정보에 제한적으로 사용한다.
@@ -305,7 +312,7 @@
 
 ## 10. Elevation
 
-한국 모바일 서비스에서 익숙한 평평하고 정돈된 UI를 기본으로 한다.
+한국 모바일 서비스에서 익숙한 평평하고 정돈된 콘텐츠 UI를 기본으로 한다. 단, navigation·overlay처럼 콘텐츠 위에 실제로 떠 있는 interface layer에는 절제된 translucent material을 사용할 수 있다.
 
 Card와 섹션의 구분 수단은 다음 순서로 검토한다.
 
@@ -319,8 +326,28 @@ Card와 섹션의 구분 수단은 다음 순서로 검토한다.
 
 - 카드마다 자동으로 border나 shadow를 추가하지 않는다.
 - Shadow는 Bottom Sheet, Modal, 고정 CTA처럼 실제로 떠 있는 요소에만 매우 약하게 사용한다.
-- 강한 drop shadow, neumorphism, glassmorphism은 사용하지 않는다.
+- 강한 drop shadow와 neumorphism은 사용하지 않는다.
 - elevation은 장식이 아니라 레이어 관계를 설명해야 한다.
+
+### 10.1 Liquid Glass / Translucent Material
+
+Glass는 스타일 자체를 과시하기 위한 장식이 아니라 콘텐츠와 interface layer의 위계를 만드는 수단이다.
+
+사용할 수 있는 곳:
+
+- Floating Bottom Tab Bar
+- Floating Control과 일부 Filter Bar
+- Modal, Bottom Sheet, Overlay
+- 콘텐츠 위에 떠야 하는 제한적인 Header
+
+사용하지 않는 곳:
+
+- Harvest Card 전체
+- 모든 Section과 일반 Text Container
+- 긴 Form 전체
+- 화면 전체 배경
+
+Glass surface는 translucent white, platform blur, 높은 radius, 매우 얇은 white highlight와 border, 약한 shadow를 조합한다. iOS의 native material을 우선하며 Android에서는 성능과 지원 범위를 확인해 native blur 또는 충분한 대비의 반투명 fallback을 사용한다. 단순히 흰색 box의 opacity만 낮춰 glass라고 부르지 않는다. 텍스트와 아이콘의 대비는 배경 이미지와 관계없이 읽을 수 있어야 한다.
 
 ---
 
@@ -350,8 +377,11 @@ Lucide 계열처럼 단순하고 둥글며 이해하기 쉬운 일관된 outline
 
 ### Rules
 
+- Bottom Tab Bar는 화면 좌우와 바닥에서 여백을 두고 떠 있는 큰 rounded glass capsule로 만든다.
+- 콘텐츠가 tab bar 아래로 자연스럽게 지나가되, 마지막 콘텐츠가 가려지지 않도록 충분한 bottom padding을 둔다.
+- translucent material, background blur, 얇은 highlight와 border, 매우 약한 shadow를 사용한다.
 - `올리기`는 핵심 행동으로 가운데 배치하고 다른 탭보다 한 단계 강조한다.
-- 강조는 색, icon background, weight 차이처럼 절제된 방식으로 표현한다.
+- 강조는 tab bar 안의 조금 더 큰 touch area, subtle tinted glass, Brand Green accent처럼 절제된 방식으로 표현한다.
 - 거대한 Floating Action Button처럼 과도하게 떠 보이게 만들지 않는다.
 - 모든 탭에 icon과 한국어 label을 함께 제공한다.
 - 활성 탭은 색상뿐 아니라 weight 또는 형태 차이로도 구분한다.
@@ -640,6 +670,7 @@ DDAOM에서 판매자 profile은 단순한 개인 계정이 아니라 **텃밭 i
 
 - 간단한 선택은 Bottom Sheet를 우선 검토한다.
 - 중요한 확인과 집중이 필요한 내용은 Modal을 사용한다.
+- Bottom Sheet와 Modal은 콘텐츠 위에 떠 있는 layer이므로 가독성이 확보되는 범위에서 translucent material을 사용할 수 있다.
 - 제목, 설명, action의 순서가 명확해야 하며 닫는 방법을 숨기지 않는다.
 - 파괴적 action은 대상과 결과를 구체적으로 설명한다.
 - 큰 글자와 작은 화면에서도 내용이 스크롤되고 주요 action이 보이게 한다.
@@ -713,9 +744,13 @@ DDAOM에서 판매자 profile은 단순한 개인 계정이 아니라 **텃밭 i
 
 다음 표현은 사용하지 않는다.
 
-- glassmorphism
+- 화면 전체 또는 모든 카드에 반복되는 glass
+- 가독성을 해치는 지나친 transparency와 blur
+- glass 자체가 콘텐츠보다 먼저 보이는 장식적 glassmorphism
 - neumorphism
 - excessive gradient
+- rainbow gradient, neon, cyberpunk, excessive glow
+- 큰 floating orb와 의미 없는 decorative gradient
 - 과도하거나 강한 shadow
 - 농촌풍 visual
 - 나무 texture
@@ -783,7 +818,7 @@ DDAOM에서 판매자 profile은 단순한 개인 계정이 아니라 **텃밭 i
 
 DDAOM의 UI는 “농산물 판매 앱”보다 **“오늘 우리 동네에 뭐가 따였지?”**라는 느낌을 먼저 전달해야 한다.
 
-한국 사용자에게 익숙하고, 식품 사진은 깔끔하고 매력적으로 보이며, 거래 과정은 자연스러워야 한다. 동시에 어떤 기존 앱의 복제품도 아니어야 한다.
+한국 사용자에게 익숙하고, 식품 사진은 깔끔하고 매력적으로 보이며, 거래 과정은 자연스러워야 한다. 동시에 어떤 기존 앱의 복제품도 아니어야 한다. 첫인상은 “글래스모피즘 앱”이 아니라 **“잘 만든 최신 iPhone 앱”**이어야 하며, glass는 콘텐츠와 navigation hierarchy를 만드는 조용한 수단으로만 사용한다.
 
 DDAOM을 구별하는 핵심은 다음 네 가지다.
 
